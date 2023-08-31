@@ -1,0 +1,27 @@
+project:
+  type: website
+  output-dir: docs
+website:
+  title: "blog"
+  twitter-card: true
+  navbar:
+    right:
+      - icon: github
+        href: https://github.com/
+      - icon: twitter
+        href: https://twitter.com
+      - text: Archive
+        href: archive.qmd
+      - about.qmd
+  
+      
+format:
+  html:
+    theme: sketchy
+    css: styles.css
+    code-fold: true
+
+  
+
+
+

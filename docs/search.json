@@ -1,0 +1,51 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Oskar’s blog",
+    "section": "",
+    "text": "Order By\n       Default\n         \n          Title\n        \n         \n          Date - Oldest\n        \n         \n          Date - Newest\n        \n         \n          Author\n        \n     \n  \n    \n      \n      \n    \n\n\n\n\n  \n\n\n\n\nBroadway Grosses Analysis\n\n\n\n\n\n\n\nnews\n\n\ncode\n\n\nanalysis\n\n\n\n\n\n\n\n\n\n\n\nAug 28, 2023\n\n\nZhang Zhang\n\n\n\n\n\n\n  \n\n\n\n\nThree Minutes Gallery\n\n\n\n\n\n\n\ngallery\n\n\nphotos\n\n\n\n\n\n\n\n\n\n\n\nAug 26, 2023\n\n\nZhang Zhang\n\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "posts/gallery/gallery.html",
+    "href": "posts/gallery/gallery.html",
+    "title": "Three Minutes Gallery",
+    "section": "",
+    "text": "Let us take a break & go to street.\n\n\n\nWerner Bischof, London, 1949\n\n\n\n\n\nMirrorpix. Children in a Manchester Street. 1943\n\n\n\n\n\nMarc Riboud. Leeds, 1954\n\n\n\n\n\nLetizia Battaglia. Palermo, Children, quartiere Sperone, 1981\n\n\n\n\n\nJack Manning. Chalk Games, East 104th Street, New York, 1967."
+  },
+  {
+    "objectID": "posts/broadway-grosses -analysis/index.html",
+    "href": "posts/broadway-grosses -analysis/index.html",
+    "title": "Broadway Grosses Analysis",
+    "section": "",
+    "text": "A view from financial prospective about the Broadway.\nThe dataset is sourced from Playbill and encompasses weekly box office grosses, including revenue and attendance figures for theaters that are members of The Broadway League, the trade association for the Broadway theatre industry. This data provides a comprehensive overview of the commercial successes and trends within the theater industry. The dataset is available for public access on the tidytuesday GitHub repository."
+  },
+  {
+    "objectID": "posts/broadway-grosses -analysis/index.html#longevity-and-success-total-historical-grosses-vs.-years-of-run",
+    "href": "posts/broadway-grosses -analysis/index.html#longevity-and-success-total-historical-grosses-vs.-years-of-run",
+    "title": "Broadway Grosses Analysis",
+    "section": "Longevity and Success: Total Historical Grosses vs. Years of Run",
+    "text": "Longevity and Success: Total Historical Grosses vs. Years of Run\nThe plot illustrates the relationship between the duration of a Broadway show’s run and its total historical grosses. While longer-running shows generally accumulate higher grosses, there are exceptions, indicating that other factors like popularity, ticket prices, and marketing also impact a show’s financial success. This underscores the multifaceted nature of the Broadway industry, where longevity is one of many contributors to a show’s financial performance.\n\n\nCode\np <- plot_ly(\n  data = tot_show, \n  x = ~Year_Of_Run, \n  y = ~Total_Gross, \n  type = 'scatter', \n  mode = 'markers',\n  color = ~Show, # Color by Show\n  text = ~paste(\"Show:\", Show, \"<br>Historical Total Gross:\", Total_Gross, \"<br>Year of Run:\", Year_Of_Run), # Text to display on hover\n  hoverinfo = \"text\"\n) %>% layout(\n  title = \"Longevity and Success: Total Historical Grosses vs. Years of Run\",\n  xaxis = list(title = \"Year of Run\"),\n  yaxis = list(title = \"Historical Total Gross\"),\n  showlegend = FALSE\n)\n\np"
+  },
+  {
+    "objectID": "posts/broadway-grosses -analysis/index.html#shows-ranked-by-grosses",
+    "href": "posts/broadway-grosses -analysis/index.html#shows-ranked-by-grosses",
+    "title": "Broadway Grosses Analysis",
+    "section": "Shows Ranked By Grosses",
+    "text": "Shows Ranked By Grosses\n\n\nCode\n#| warning: false\n#| message: false\n\ntot_show1<- tot_show%>%\n  select(Show,Total_Gross,Average_Ticket_Price, Total_Seats_Sold,Rank,Year_Of_Run)\n\ndatatable(tot_show1)%>% \n  formatStyle(columns = names(tot_show1), fontSize = '70%')"
+  },
+  {
+    "objectID": "archive.html",
+    "href": "archive.html",
+    "title": "Archive",
+    "section": "",
+    "text": "Broadway Grosses Analysis\n\n\n\n\n\n\n\n\n\nAug 28, 2023\n\n\n\n\n\n\n\n\nThree Minutes Gallery\n\n\n\n\n\n\n\n\n\nAug 26, 2023\n\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this blog"
+  }
+]

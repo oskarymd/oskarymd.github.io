@@ -1,0 +1,177 @@
+---
+title: "Broadway Grosses Analysis"
+author: "Zhang Zhang"
+date: "2023-08-28"
+contents: posts/broadway-grosses-analysis
+categories: [news, code, analysis]
+image: "broadway.png"
+---
+
+# Data Description
+A view from financial prospective about the Broadway.
+
+The dataset is sourced from Playbill and encompasses weekly box office grosses, including revenue and attendance figures for theaters that are members of The Broadway League, the trade association for the Broadway theatre industry. This data provides a comprehensive overview of the commercial successes and trends within the theater industry. The dataset is available for public access on the [tidytuesday GitHub repository](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-04-28).
+
+# Data Story: 
+
+To analyze the financial aspects of Broadway, a Shiny application was developed, offering a panoramic view of the theater industry's commercial successes and trends. The application consists of six main sections: "Annually Analysis", "Weekly Grosses", "Shows", "Theatres", "Top Shows & Theatres", and "About". In this article, we will showcase visuals (a plot and a table) from the application. For more details of this app, please click [Broadway Grosses Analysis shinyapp](https://oskarymd.shinyapps.io/assignment1)
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| include: false
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(DT)
+library(rmarkdown)
+library(lubridate)
+
+```
+
+```{r}
+
+#| warning: false
+#| message: false
+#| echo: false
+grosses <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/grosses.csv', guess_max = 40000,show_col_types = FALSE)
+pre_1985_starts <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/pre-1985-starts.csv',show_col_types = FALSE)
+synopses <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/synopses.csv',show_col_types = FALSE)
+
+
+```
+
+```{r}
+#| warning: false
+#| message: false
+
+grosses_clean_temp <- grosses %>%
+  group_by(show) %>%
+  arrange(week_ending) %>%
+  mutate(run_number = cumsum(row_number() == 1 |
+                               week_ending - lag(week_ending) > 90)) %>%
+  group_by(show, run_number) %>%
+  mutate(week_of_run = row_number()) %>%
+  ungroup()
+
+re_1985_starts <- readr::read_csv("https://raw.githubusercontent.com/tacookson/data/master/broadway-grosses/pre-1985-starts.csv")
+
+calculate_weeks_since_start <- function(x) {
+  as.integer(pmax(1, difftime("1985-06-09", x, units = "weeks")))
+}
+
+pre_1985_starts_calculated <- grosses_clean_temp %>%
+  group_by(show, run_number) %>%
+  filter(min(week_ending) == "1985-06-09") %>%
+  ungroup() %>%
+  select(week_ending, show) %>%
+  left_join(pre_1985_starts, by = "show") %>%
+  group_by(show) %>%
+  mutate(week_of_run_originals = calculate_weeks_since_start(start_date) + row_number()) %>%
+  ungroup() %>%
+  select(week_ending, show, week_of_run_originals)
+
+grosses_clean <- grosses_clean_temp %>%
+  left_join(pre_1985_starts_calculated, by = c("show", "week_ending")) %>%
+  mutate(week_of_run = coalesce(week_of_run_originals, week_of_run)) %>%
+  select(-week_of_run_originals)
+
+
+tot_show <- grosses_clean %>%
+  group_by(show) %>%
+  mutate(
+    historical_total_gross = sum(weekly_gross),
+    avg_ticket_price = as.integer(sum(weekly_gross) / sum(seats_sold)),
+    total_seats_sold = as.integer(sum(seats_sold))
+  ) %>%
+  ungroup()
+
+tot_show <- tot_show %>%
+  select(show, historical_total_gross, week_of_run, avg_ticket_price, total_seats_sold)
+
+# Remove duplicated rows based on the show column
+tot_show <- tot_show %>%
+  arrange(show, desc(week_of_run)) %>%
+  distinct(show, .keep_all = TRUE)
+
+
+broadway_grosses_with_total <- grosses %>%
+  left_join(tot_show, by = "show")
+
+tot_show <- tot_show %>%
+  arrange(desc(historical_total_gross)) %>%
+  mutate(rank = row_number())
+
+tot_show <- tot_show %>%
+  mutate(historical_total_gross = as.integer(historical_total_gross))
+
+tot_show<- left_join(tot_show, synopses, by = "show")%>% 
+  mutate(year_of_run = round(week_of_run / 52, 2))
+
+tot_show <- tot_show %>% 
+  rename(
+    Show = show,
+    Total_Gross = historical_total_gross,
+    Week_Of_Run = week_of_run,
+    Average_Ticket_Price = avg_ticket_price,
+    Total_Seats_Sold = total_seats_sold,
+    Rank = rank,
+    Year_Of_Run = year_of_run,
+    Synopsis = synopsis
+  )
+
+
+```
+
+
+## Longevity and Success: Total Historical Grosses vs. Years of Run
+The plot illustrates the relationship between the duration of a Broadway show's run and its total historical grosses. While longer-running shows generally accumulate higher grosses, there are exceptions, indicating that other factors like popularity, ticket prices, and marketing also impact a show's financial success. This underscores the multifaceted nature of the Broadway industry, where longevity is one of many contributors to a show's financial performance.
+
+
+```{r}
+#| warning: false
+#| message: false
+
+
+p <- plot_ly(
+  data = tot_show, 
+  x = ~Year_Of_Run, 
+  y = ~Total_Gross, 
+  type = 'scatter', 
+  mode = 'markers',
+  color = ~Show, # Color by Show
+  text = ~paste("Show:", Show, "<br>Historical Total Gross:", Total_Gross, "<br>Year of Run:", Year_Of_Run), # Text to display on hover
+  hoverinfo = "text"
+) %>% layout(
+  title = "Longevity and Success: Total Historical Grosses vs. Years of Run",
+  xaxis = list(title = "Year of Run"),
+  yaxis = list(title = "Historical Total Gross"),
+  showlegend = FALSE
+)
+
+p
+
+
+```
+
+
+
+## Shows Ranked By Grosses
+
+
+```{r}
+
+#| warning: false
+#| message: false
+
+tot_show1<- tot_show%>%
+  select(Show,Total_Gross,Average_Ticket_Price, Total_Seats_Sold,Rank,Year_Of_Run)
+
+datatable(tot_show1)%>% 
+  formatStyle(columns = names(tot_show1), fontSize = '70%')
+
+
+
+```

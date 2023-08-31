@@ -1,0 +1,100 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Oskar’s blog",
+    "section": "",
+    "text": "Order By\n       Default\n         \n          Title\n        \n         \n          Date - Oldest\n        \n         \n          Date - Newest\n        \n         \n          Author\n        \n     \n  \n    \n      \n      \n    \n\n\n\n\n  \n\n\n\n\nBroadway Grosses Analysis\n\n\n\n\n\n\n\nnews\n\n\ncode\n\n\nanalysis\n\n\n\n\n\n\n\n\n\n\n\nAug 28, 2023\n\n\nZhang Zhang\n\n\n\n\n\n\n  \n\n\n\n\nThree Minutes Gallery\n\n\n\n\n\n\n\ngallery\n\n\nphotos\n\n\n\n\n\n\n\n\n\n\n\nAug 26, 2023\n\n\nZhang Zhang\n\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "posts/post-with-code/index.html",
+    "href": "posts/post-with-code/index.html",
+    "title": "Post With Code",
+    "section": "",
+    "text": "This is a post with executable code.\n\n1 + 1\n\n[1] 2"
+  },
+  {
+    "objectID": "posts/welcome/index.html",
+    "href": "posts/welcome/index.html",
+    "title": "Welcome To My Blog",
+    "section": "",
+    "text": "This is the first post in a Quarto blog. Welcome!\n\nSince this post doesn’t specify an explicit image, the first image in the post will be used in the listing page of posts."
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this blog"
+  },
+  {
+    "objectID": "bga.html",
+    "href": "bga.html",
+    "title": "Data Preparation for Broadway Shiny App",
+    "section": "",
+    "text": "# Get the Data\n\ngrosses <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/grosses.csv', guess_max = 40000)\nsynopses <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/synopses.csv')\ncpi <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/cpi.csv')\npre_1985_starts <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/pre-1985-starts.csv')\n\n\ngrosses_clean_temp <- grosses %>%\n  group_by(show) %>%\n  arrange(week_ending) %>%\n  mutate(run_number = cumsum(row_number() == 1 |\n                               week_ending - lag(week_ending) > 90)) %>%\n  group_by(show, run_number) %>%\n  mutate(week_of_run = row_number()) %>%\n  ungroup()\n\nre_1985_starts <- readr::read_csv(\"https://raw.githubusercontent.com/tacookson/data/master/broadway-grosses/pre-1985-starts.csv\")\n\ncalculate_weeks_since_start <- function(x) {\n  as.integer(pmax(1, difftime(\"1985-06-09\", x, units = \"weeks\")))\n}\n\npre_1985_starts_calculated <- grosses_clean_temp %>%\n  group_by(show, run_number) %>%\n  filter(min(week_ending) == \"1985-06-09\") %>%\n  ungroup() %>%\n  select(week_ending, show) %>%\n  left_join(pre_1985_starts, by = \"show\") %>%\n  group_by(show) %>%\n  mutate(week_of_run_originals = calculate_weeks_since_start(start_date) + row_number()) %>%\n  ungroup() %>%\n  select(week_ending, show, week_of_run_originals)\n\ngrosses_clean <- grosses_clean_temp %>%\n  left_join(pre_1985_starts_calculated, by = c(\"show\", \"week_ending\")) %>%\n  mutate(week_of_run = coalesce(week_of_run_originals, week_of_run)) %>%\n  select(-week_of_run_originals)\n\n\nweek_gross_show<- grosses%>% group_by(week_ending)%>%arrange(desc(weekly_gross))%>%\n  select(week_ending, weekly_gross_overall,show, theatre,weekly_gross,avg_ticket_price,top_ticket_price,seats_sold, seats_in_theatre ,pct_capacity,performances )\nweekly_pct_show<-grosses%>% group_by(week_ending)%>%arrange(desc(pct_capacity))\n\nweek_gross_show <- week_gross_show %>%\n  rename(\n    Week_Ending = week_ending,\n    Weekly_Gross_Overall = weekly_gross_overall,\n    Show = show,\n    Theatre = theatre,\n    Weekly_Gross = weekly_gross,\n    Avg_Ticket_Price = avg_ticket_price,\n    Top_Ticket_Price = top_ticket_price,\n    Total_Seats_Sold = seats_sold,\n    Total_Seats_In_Theatre = seats_in_theatre,\n    Pct_Capacity = pct_capacity,\n    Performances = performances\n  )\n\n\nglimpse(week_gross_show)\n\nRows: 47,524\nColumns: 11\nGroups: Week_Ending [1,812]\n$ Week_Ending            <date> 2018-12-30, 2017-12-31, 2018-11-25, 2017-12-24…\n$ Weekly_Gross_Overall   <dbl> 57807272, 50354029, 43043393, 35795927, 5780727…\n$ Show                   <chr> \"Hamilton\", \"Hamilton\", \"Hamilton\", \"Hamilton\",…\n$ Theatre                <chr> \"Richard Rodgers Theatre\", \"Richard Rodgers The…\n$ Weekly_Gross           <dbl> 4041493, 3854874, 3808299, 3797844, 3696974, 36…\n$ Avg_Ticket_Price       <dbl> 375.39, 358.46, 354.10, 353.06, 242.15, 339.03,…\n$ Top_Ticket_Price       <dbl> 849, 849, 849, 849, 225, 996, 849, 427, 849, 24…\n$ Total_Seats_Sold       <dbl> 10766, 10754, 10755, 10757, 15267, 10755, 10755…\n$ Total_Seats_In_Theatre <dbl> 1321, 1321, 1321, 1321, 1696, 1324, 1321, 1696,…\n$ Pct_Capacity           <dbl> 1.0187, 1.0176, 1.0177, 1.0179, 1.0002, 1.0154,…\n$ Performances           <dbl> 8, 8, 8, 8, 9, 8, 8, 9, 8, 9, 8, 8, 8, 8, 9, 8,…\n\n\n\ntot_show <- grosses_clean %>%\n  group_by(show) %>%\n  mutate(\n    historical_total_gross = sum(weekly_gross),\n    avg_ticket_price = as.integer(sum(weekly_gross) / sum(seats_sold)),\n    total_seats_sold = as.integer(sum(seats_sold))\n  ) %>%\n  ungroup()\n\ntot_show <- tot_show %>%\n  select(show, historical_total_gross, week_of_run, avg_ticket_price, total_seats_sold)\n\n# Remove duplicated rows based on the show column\ntot_show <- tot_show %>%\n  arrange(show, desc(week_of_run)) %>%\n  distinct(show, .keep_all = TRUE)\n\n\nbroadway_grosses_with_total <- grosses %>%\n  left_join(tot_show, by = \"show\")\n\n\nweek_total <- grosses%>%\n  group_by(week_ending) %>%\n  summarize(\n    weekly_avg_price = mean(avg_ticket_price, na.rm = TRUE),  # Computing the average ticket price for the week\n    weekly_seats_sold = sum(seats_sold, na.rm = TRUE),        # Total number of seats sold in the week\n    weekly_gross_overall = first(weekly_gross_overall)        # Taking the weekly_gross_overall (assuming it's same for all shows in a week)\n  ) %>%\n  ungroup()\n\nweek_total <- week_total %>%\n  rename(\n    Week_Ending = week_ending,\n    Weekly_Avg_Price = weekly_avg_price,\n    Weekly_Seats_Sold = weekly_seats_sold,\n    Weekly_Gross_Overall = weekly_gross_overall\n  )\n\n\nglimpse(week_total)\n\nRows: 1,812\nColumns: 4\n$ Week_Ending          <date> 1985-06-09, 1985-06-16, 1985-06-23, 1985-06-30, …\n$ Weekly_Avg_Price     <dbl> 27.36789, 27.17000, 27.44333, 27.48444, 25.73353,…\n$ Weekly_Seats_Sold    <dbl> 132214, 127655, 124925, 131832, 103784, 108076, 1…\n$ Weekly_Gross_Overall <dbl> 3915937, 3685742, 3690242, 3986642, 2929052, 3072…\n\n\n\ntot_show <- tot_show %>%\n  arrange(desc(historical_total_gross)) %>%\n  mutate(rank = row_number())\n\ntot_show <- tot_show %>%\n  mutate(historical_total_gross = as.integer(historical_total_gross))\n\ntot_show<- left_join(tot_show, synopses, by = \"show\")%>% \n  mutate(year_of_run= week_of_run/52)\n\ntot_show <- tot_show %>% \n  rename(\n    Show = show,\n    Historical_Total_Gross = historical_total_gross,\n    Week_Of_Run = week_of_run,\n    Avg_Ticket_Price = avg_ticket_price,\n    Total_Seats_Sold = total_seats_sold,\n    Rank = rank,\n    Year_Of_Run = year_of_run,\n    Synopsis = synopsis\n  )\n\n\ntheatres <- grosses_clean %>%\n  group_by(theatre) %>%\n  summarise(\n    total_grosses = as.integer(sum(weekly_gross, na.rm = TRUE)),\n    average_pct_capacity = round(mean(pct_capacity, na.rm = TRUE), 2),\n    seats_in_theatre = max(seats_in_theatre, na.rm = TRUE) # Add the maximum number of seats for each theatre\n  ) %>%\n  arrange(desc(total_grosses)) %>%      # Arrange theatres in descending order of total_grosses\n  mutate(rank = row_number()) %>%        # Assign rank based on the arranged order\n  left_join(\n    grosses_clean %>%\n      group_by(theatre, show) %>%\n      summarise(num_weeks = n(), .groups = \"drop\") %>%   # Add .groups = \"drop\" to avoid the grouped_df class\n      arrange(theatre, desc(num_weeks)) %>%\n      group_by(theatre) %>%\n      slice_head(n = 2) %>%\n      summarise(popular_shows = paste(show, collapse = \", \"), .groups = \"drop\"),  # Add .groups = \"drop\" again\n    by = \"theatre\"\n  )\n\ntheatres <- theatres %>%\n  rename(\n    Theatre = theatre,\n    Total_Grosses = total_grosses,\n    Average_Pct_Capacity = average_pct_capacity,\n    Seats_In_Theatre = seats_in_theatre,\n    Rank = rank,\n    Popular_Shows = popular_shows\n  )\n\nglimpse(theatres)\n\nRows: 58\nColumns: 6\n$ Theatre              <chr> \"Minskoff Theatre\", \"Gershwin Theatre\", \"Majestic…\n$ Total_Grosses        <int> 1948522052, 1664402395, 1251492673, 1166847941, 1…\n$ Average_Pct_Capacity <dbl> 0.90, 0.87, 0.90, 0.83, 0.81, 0.88, 0.88, 0.82, 0…\n$ Seats_In_Theatre     <dbl> 1801, 1969, 1617, 1498, 1408, 1752, 1115, 1740, 1…\n$ Rank                 <int> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15…\n$ Popular_Shows        <chr> \"The Lion King, Sunset Boulevard\", \"Wicked, Grand…\n\n\n\nsaveRDS(grosses_clean, \"grosses_clean.rds\")\nsaveRDS(tot_show, \"tot_show.rds\")\nsaveRDS(theatres, \"theatres.rds\")\nsaveRDS(week_total, \"week_total.rds\")\nsaveRDS(week_gross_show, \"week_gross_show.rds\")"
+  },
+  {
+    "objectID": "index.html#data-description",
+    "href": "index.html#data-description",
+    "title": "Broadway Grosses Analysis",
+    "section": "Data Description",
+    "text": "Data Description\nThe data used in this analysis originates from the Broadway League and is available on the tidytuesday GitHub repository. The dataset includes the following variables:\n\nWeek_Ending: The ending date of the week.\nWeekly_Gross_Overall: The total gross for the week.\nWeekly_Average_Price: The average ticket price for the week.\nWeekly_Seats_Sold: The total number of seats sold for the week.\nShow: The name of the show.\nHistorical_Total_Gross: The historical total gross of the show.\nAvg_Ticket_Price: The average ticket price of the show.\nTotal_Seats_Sold: The total number of seats sold for the show.\nTheatre: The name of the theatre where the show was performed.\nTotal_Grosses: The total grosses of the theatre.\nAverage_Pct_Capacity: The average percentage capacity of the theatre.\nSeats_In_Theatre: The total number of seats in the theatre."
+  },
+  {
+    "objectID": "index.html#data-story",
+    "href": "index.html#data-story",
+    "title": "Broadway Grosses Analysis",
+    "section": "Data Story",
+    "text": "Data Story\nTo analyze the financial aspects of Broadway, a Shiny application was developed, offering a panoramic view of the theater industry’s commercial successes and trends. The application consists of six main sections: “Annually Analysis”, “Weekly Grosses”, “Shows”, “Theatres”, “Top Shows & Theatres”, and “About”. Below, we will delve into each section and explore some engaging insights."
+  },
+  {
+    "objectID": "posts/Broadway Grosses Analysis/index.html",
+    "href": "posts/Broadway Grosses Analysis/index.html",
+    "title": "Broadway Grosses Analysis",
+    "section": "",
+    "text": "Data Description\nThe dataset is sourced from Playbill and encompasses weekly box office grosses, including revenue and attendance figures for theaters that are members of The Broadway League, the trade association for the Broadway theatre industry. This data provides a comprehensive overview of the commercial successes and trends within the theater industry. The dataset is available for public access on the tidytuesday GitHub repository.\nData Story: Total Grosses by Year\nTo analyze the financial aspects of Broadway, a Shiny application was developed, offering a panoramic view of the theater industry’s commercial successes and trends. The application consists of six main sections: “Annually Analysis”, “Weekly Grosses”, “Shows”, “Theatres”, “Top Shows & Theatres”, and “About”. Below, we will delve into each section and explore some engaging insights.For more details of this app, please click Broadway Grosses Analysis shinyapp\n\n#| warning: false\n#| message: false\n#| echo: false\n#| show_col_types = FALSE\ngrosses <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/grosses.csv', guess_max = 40000)\n\nRows: 47524 Columns: 14\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr   (2): show, theatre\ndbl  (11): week_number, weekly_gross_overall, weekly_gross, potential_gross,...\ndate  (1): week_ending\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.\n\npre_1985_starts <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/pre-1985-starts.csv')\n\nRows: 19 Columns: 2\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr  (1): show\ndate (1): start_date\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.\n\nsynopses <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/synopses.csv')\n\nRows: 1122 Columns: 2\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr (2): show, synopsis\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.\n\n\n\n\n\n\n\n\n\n#| warning: false\n#| message: false\n#| echo: false\n\n\n\ntot_show1<- tot_show%>%\n  select(Show,Historical_Total_Gross,Avg_Ticket_Price, Total_Seats_Sold,Rank,Year_Of_Run)\ndatatable(tot_show1)"
+  },
+  {
+    "objectID": "archive.html",
+    "href": "archive.html",
+    "title": "Archive",
+    "section": "",
+    "text": "Broadway Grosses Analysis\n\n\n\n\n\n\n\n\n\nAug 28, 2023\n\n\n\n\n\n\n\n\nThree Minutes Gallery\n\n\n\n\n\n\n\n\n\nAug 26, 2023\n\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "posts/broadway-grosses -analysis/index.html",
+    "href": "posts/broadway-grosses -analysis/index.html",
+    "title": "Broadway Grosses Analysis",
+    "section": "",
+    "text": "A view from financial prospective about the Broadway.\nThe dataset is sourced from Playbill and encompasses weekly box office grosses, including revenue and attendance figures for theaters that are members of The Broadway League, the trade association for the Broadway theatre industry. This data provides a comprehensive overview of the commercial successes and trends within the theater industry. The dataset is available for public access on the tidytuesday GitHub repository."
+  },
+  {
+    "objectID": "posts/broadway-grosses -analysis/index.html#longevity-and-success-total-historical-grosses-vs.-years-of-run",
+    "href": "posts/broadway-grosses -analysis/index.html#longevity-and-success-total-historical-grosses-vs.-years-of-run",
+    "title": "Broadway Grosses Analysis",
+    "section": "Longevity and Success: Total Historical Grosses vs. Years of Run",
+    "text": "Longevity and Success: Total Historical Grosses vs. Years of Run\nThe plot illustrates the relationship between the duration of a Broadway show’s run and its total historical grosses. While longer-running shows generally accumulate higher grosses, there are exceptions, indicating that other factors like popularity, ticket prices, and marketing also impact a show’s financial success. This underscores the multifaceted nature of the Broadway industry, where longevity is one of many contributors to a show’s financial performance.\n\n\nCode\np <- plot_ly(\n  data = tot_show, \n  x = ~Year_Of_Run, \n  y = ~Total_Gross, \n  type = 'scatter', \n  mode = 'markers',\n  color = ~Show, # Color by Show\n  text = ~paste(\"Show:\", Show, \"<br>Historical Total Gross:\", Total_Gross, \"<br>Year of Run:\", Year_Of_Run), # Text to display on hover\n  hoverinfo = \"text\"\n) %>% layout(\n  title = \"Longevity and Success: Total Historical Grosses vs. Years of Run\",\n  xaxis = list(title = \"Year of Run\"),\n  yaxis = list(title = \"Historical Total Gross\"),\n  showlegend = FALSE\n)\n\np"
+  },
+  {
+    "objectID": "posts/broadway-grosses -analysis/index.html#shows-ranked-by-grosses",
+    "href": "posts/broadway-grosses -analysis/index.html#shows-ranked-by-grosses",
+    "title": "Broadway Grosses Analysis",
+    "section": "Shows Ranked By Grosses",
+    "text": "Shows Ranked By Grosses\n\n\nCode\n#| warning: false\n#| message: false\n\ntot_show1<- tot_show%>%\n  select(Show,Total_Gross,Average_Ticket_Price, Total_Seats_Sold,Rank,Year_Of_Run)\n\ndatatable(tot_show1)%>% \n  formatStyle(columns = names(tot_show1), fontSize = '70%')"
+  },
+  {
+    "objectID": "posts/Gallery/gallery.html",
+    "href": "posts/Gallery/gallery.html",
+    "title": "Gallery",
+    "section": "",
+    "text": "Werner Bischof, London, 1949  Mirrorpix. Children in a Manchester Street. 1943\n Marc Riboud. Leeds, 1954  Letizia Battaglia. Palermo, Children, quartiere Sperone, 1981.  Jack Manning. Chalk Games, East 104th Street, New York, 1967."
+  },
+  {
+    "objectID": "posts/gallery/gallery.html",
+    "href": "posts/gallery/gallery.html",
+    "title": "Three Minutes Gallery",
+    "section": "",
+    "text": "Let us take a break & go to street.\n\n\n\nWerner Bischof, London, 1949\n\n\n\n\n\nMirrorpix. Children in a Manchester Street. 1943\n\n\n\n\n\nMarc Riboud. Leeds, 1954\n\n\n\n\n\nLetizia Battaglia. Palermo, Children, quartiere Sperone, 1981\n\n\n\n\n\nJack Manning. Chalk Games, East 104th Street, New York, 1967."
+  }
+]
