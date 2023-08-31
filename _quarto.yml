@@ -13,7 +13,9 @@ website:
       - text: Archive
         href: archive.qmd
       - about.qmd
-  
+site:
+  baseurl: "/<oskarymd.github.io>"
+ 
       
 format:
   html:
