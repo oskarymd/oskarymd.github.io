@@ -17,3 +17,9 @@ about:
 ---
 
 About this blog
+
+Hello! I'm Oskar, a data enthusiast and studing Master of Business Analytics In Monash University.
+
+This is my blog where I share insights and analyses on interesting topics.
+
+Feel free to explore and share your thoughts!

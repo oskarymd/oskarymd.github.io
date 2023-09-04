@@ -8,13 +8,16 @@ image: "broadway.png"
 ---
 
 # Data Description
-A view from financial prospective about the Broadway.
+--- A view from financial prospective about the Broadway.
 
-The dataset is sourced from Playbill and encompasses weekly box office grosses, including revenue and attendance figures for theaters that are members of The Broadway League, the trade association for the Broadway theatre industry. This data provides a comprehensive overview of the commercial successes and trends within the theater industry. The dataset is available for public access on the [tidytuesday GitHub repository](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-04-28).
+The dataset is sourced from Playbill and encompasses weekly box office grosses from 1985 to 2020, including financial figures for shows and theaters that are members of The Broadway League, the trade association for the Broadway theatre industry. This data provides a comprehensive overview of the commercial successes and trends within the theater industry. It is available for public access on the [tidytuesday GitHub repository](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-04-28).
 
-# Data Story: 
+# Data Story
+## Cracking the Broadway Revenue Code: How Ticket Prices and Seat Sales Shape the Game
 
-To analyze the financial aspects of Broadway, a Shiny application was developed, offering a panoramic view of the theater industry's commercial successes and trends. The application consists of six main sections: "Annually Analysis", "Weekly Grosses", "Shows", "Theatres", "Top Shows & Theatres", and "About". In this article, we will showcase visuals (a plot and a table) from the application. For more details of this app, please click [Broadway Grosses Analysis shinyapp](https://oskarymd.shinyapps.io/assignment1)
+Broadway isn't just about the glitz, glamour, and those thrilling stage performances. It's also a massive economic machine, raking in big bucks every year. But ever wondered what makes some shows sell like hotcakes? Let's delve into the fascinating world of Broadway's financial landscape, examining how ticket prices and seat sales have shaped its revenues over the years.  
+
+For those interested in exploring the data further, we have also developed a Shiny app, which can be accessed through the following link: [Broadway Grosses Analysis shinyapp](https://oskarymd.shinyapps.io/assignment1)
 
 ```{r}
 #| warning: false
@@ -28,150 +31,112 @@ library(plotly)
 library(DT)
 library(rmarkdown)
 library(lubridate)
+library(knitr)
+library(broom)
+library(kableExtra)
 
 ```
 
-```{r}
 
+### 1. Tracking Trends: Gross Revenues, Ticket Prices, and Seats Sold Over Time
+
+
+
+```{r}
 #| warning: false
 #| message: false
-#| echo: false
+#| label: fig-linechart
+#| fig-cap: "Analyzing Trends: Broadway's Revenues, Ticket Prices, and Seats Sold"
 grosses <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/grosses.csv', guess_max = 40000,show_col_types = FALSE)
-pre_1985_starts <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/pre-1985-starts.csv',show_col_types = FALSE)
-synopses <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-28/synopses.csv',show_col_types = FALSE)
 
+grosses1 <- grosses%>% select(week_ending, weekly_gross_overall, avg_ticket_price,seats_sold)
+grosses1$year <- as.integer(format(grosses$week_ending, "%Y"))
+
+summary_by_year<- grosses1 %>%
+  group_by(year) %>%
+  mutate(Seats_Sold = sum(seats_sold, na.rm = TRUE)/10^5)%>%
+  mutate(Average_Ticket_Price = mean(avg_ticket_price, na.rm = TRUE))%>%
+  select(week_ending, weekly_gross_overall, Average_Ticket_Price,Seats_Sold,year)%>%
+  distinct(week_ending, .keep_all = TRUE)%>%
+  mutate(Yearly_Grosses = sum(weekly_gross_overall, na.rm = TRUE)/10^7) %>%
+  ungroup()%>%
+  select( Yearly_Grosses, Average_Ticket_Price,Seats_Sold,year)%>%
+  distinct(year, .keep_all = TRUE)%>%
+  filter(year != 1985 & year != 2020)
+
+summary_by_year$year <- as.numeric(summary_by_year$year)
+
+plot <- plot_ly(data = summary_by_year, x = ~year) %>%
+  add_trace(y = ~Average_Ticket_Price, name = 'Average Ticket Price ($)', mode = 'lines', 
+  line =      list(color = 'orange')) %>%
+  add_trace(y = ~Seats_Sold, name = 'Seats Sold (100K)', mode = 'lines', line = list(color = 'navy'))   %>%
+  add_trace(y = ~Yearly_Grosses, name = 'Yearly Grosses ($10M)', mode = 'lines', line = list(
+  color = 'red')) %>%
+  layout(title = "Analyzing Trends: Broadway's Revenues, Ticket Prices, and Seats Sold",
+         xaxis = list(title = "Year", 
+                      tickvals = seq(min(summary_by_year$year), 2019, by = 2),
+                      tickangle = 45, 
+                      showgrid = TRUE),
+         yaxis = list(title = "Value"))
+
+plot
 
 ```
 
+
+As we can see from figure @fig-linechart:
+
+1. Ticket prices and gross revenues appear to be intrinsically linked, moving in a similar slopes. However, the trajectory of seats sold follows a comparatively less steep. This observation suggests that revenue sensitivities are more closely tied to ticket pricing than to fluctuations in audience size.
+
+2. Seats sold displays noticeable fluctuations, whereas gross revenues and ticket prices trends are more stable. Such observations hint at other dynamics influencing seat sales without significantly destabilizing gross revenues. It also indicates that ticket prices and gross revenues are less volatile and more predictable. A crucial takeaway here is the resilience and influence of ticket prices on sustaining revenues, even in the face of fluctuating seat sales.
+
+3. From 1986 to 2006, the trends of gross revenues and seats sold were closely aligned. However, this alignment seems to pivot post-2006, with gross revenues becoming more closely associated with ticket prices. Such evolution suggest potential shifts in market dynamics, audience behaviors, or even strategic pricing adaptations.
+
+4. From 1986 to 2019, gross revenues surged by 821%, ticket prices climbed by 325%, and seats sold rose by 120%. The narrative here underscores the paramount role of ticket pricing in driving the substantial surge in revenues
+
+In conclusion, both the number of seats sold and ticket prices impact gross revenues. However, ticket prices have been a more influential factor, especially post-2006. The analysis highlights the importance of ticket pricing strategy in maximizing gross revenues.
+
+
+### 2. Influence of Ticket Prices and Seats Sold on Annual Grosses: A Regression Analysis"
+
+Our journey now transitions to a more analytical phase, focusing on regression analysis. It aims to understand the relationship between yearly gross revenues and two independent variables: average ticket price and seats sold. To ensure comparability and to remove the scale effect, the variables were standardized before running the regression. 
 ```{r}
 #| warning: false
 #| message: false
+#| label: tbl-rs
+#| tbl-cap: "Regression Model Summary."
 
-grosses_clean_temp <- grosses %>%
-  group_by(show) %>%
-  arrange(week_ending) %>%
-  mutate(run_number = cumsum(row_number() == 1 |
-                               week_ending - lag(week_ending) > 90)) %>%
-  group_by(show, run_number) %>%
-  mutate(week_of_run = row_number()) %>%
-  ungroup()
+summary_by_year1 <- summary_by_year 
+summary_by_year1$Yearly_Grosses <- scale(summary_by_year1$Yearly_Grosses)
+summary_by_year1$Average_Ticket_Price <- scale(summary_by_year1$Average_Ticket_Price)
+summary_by_year1$Seats_Sold <- scale(summary_by_year1$Seats_Sold)
 
-re_1985_starts <- readr::read_csv("https://raw.githubusercontent.com/tacookson/data/master/broadway-grosses/pre-1985-starts.csv")
+model1 <- lm(Yearly_Grosses ~ Average_Ticket_Price + Seats_Sold, data = summary_by_year1)
+model1_summary <- summary(model1)
+coef_df <- as.data.frame(coef(model1_summary))
 
-calculate_weeks_since_start <- function(x) {
-  as.integer(pmax(1, difftime("1985-06-09", x, units = "weeks")))
-}
-
-pre_1985_starts_calculated <- grosses_clean_temp %>%
-  group_by(show, run_number) %>%
-  filter(min(week_ending) == "1985-06-09") %>%
-  ungroup() %>%
-  select(week_ending, show) %>%
-  left_join(pre_1985_starts, by = "show") %>%
-  group_by(show) %>%
-  mutate(week_of_run_originals = calculate_weeks_since_start(start_date) + row_number()) %>%
-  ungroup() %>%
-  select(week_ending, show, week_of_run_originals)
-
-grosses_clean <- grosses_clean_temp %>%
-  left_join(pre_1985_starts_calculated, by = c("show", "week_ending")) %>%
-  mutate(week_of_run = coalesce(week_of_run_originals, week_of_run)) %>%
-  select(-week_of_run_originals)
-
-
-tot_show <- grosses_clean %>%
-  group_by(show) %>%
-  mutate(
-    historical_total_gross = sum(weekly_gross),
-    avg_ticket_price = as.integer(sum(weekly_gross) / sum(seats_sold)),
-    total_seats_sold = as.integer(sum(seats_sold))
-  ) %>%
-  ungroup()
-
-tot_show <- tot_show %>%
-  select(show, historical_total_gross, week_of_run, avg_ticket_price, total_seats_sold)
-
-# Remove duplicated rows based on the show column
-tot_show <- tot_show %>%
-  arrange(show, desc(week_of_run)) %>%
-  distinct(show, .keep_all = TRUE)
-
-
-broadway_grosses_with_total <- grosses %>%
-  left_join(tot_show, by = "show")
-
-tot_show <- tot_show %>%
-  arrange(desc(historical_total_gross)) %>%
-  mutate(rank = row_number())
-
-tot_show <- tot_show %>%
-  mutate(historical_total_gross = as.integer(historical_total_gross))
-
-tot_show<- left_join(tot_show, synopses, by = "show")%>% 
-  mutate(year_of_run = round(week_of_run / 52, 2))
-
-tot_show <- tot_show %>% 
-  rename(
-    Show = show,
-    Total_Gross = historical_total_gross,
-    Week_Of_Run = week_of_run,
-    Average_Ticket_Price = avg_ticket_price,
-    Total_Seats_Sold = total_seats_sold,
-    Rank = rank,
-    Year_Of_Run = year_of_run,
-    Synopsis = synopsis
-  )
-
-
-```
-
-
-## Longevity and Success: Total Historical Grosses vs. Years of Run
-The plot illustrates the relationship between the duration of a Broadway show's run and its total historical grosses. While longer-running shows generally accumulate higher grosses, there are exceptions, indicating that other factors like popularity, ticket prices, and marketing also impact a show's financial success. This underscores the multifaceted nature of the Broadway industry, where longevity is one of many contributors to a show's financial performance.
-
-
-```{r}
-#| warning: false
-#| message: false
-
-
-p <- plot_ly(
-  data = tot_show, 
-  x = ~Year_Of_Run, 
-  y = ~Total_Gross, 
-  type = 'scatter', 
-  mode = 'markers',
-  color = ~Show, # Color by Show
-  text = ~paste("Show:", Show, "<br>Historical Total Gross:", Total_Gross, "<br>Year of Run:", Year_Of_Run), # Text to display on hover
-  hoverinfo = "text"
-) %>% layout(
-  title = "Longevity and Success: Total Historical Grosses vs. Years of Run",
-  xaxis = list(title = "Year of Run"),
-  yaxis = list(title = "Historical Total Gross"),
-  showlegend = FALSE
-)
-
-p
-
-
-```
-
-
-
-## Shows Ranked By Grosses
-
-
-```{r}
-
-#| warning: false
-#| message: false
-
-tot_show1<- tot_show%>%
-  select(Show,Total_Gross,Average_Ticket_Price, Total_Seats_Sold,Rank,Year_Of_Run)
-
-datatable(tot_show1)%>% 
-  formatStyle(columns = names(tot_show1), fontSize = '70%')
+model1_summary$table <- coef(model1_summary)
+kable(model1_summary$table, align = 'c') %>%
+  kable_styling(latex_options = c("striped", "scale_down"))
 
 
 
 ```
+
+
+Directing attention to table @tbl-rs, the regression outputs present a clear picture. Both ticket prices and seats sold emerge as significant contributors to yearly grosses. However, the average ticket price has a much larger coefficient (0.8799) compared to seats sold (0.1293), indicating that the average ticket price is a more important predictor of yearly grosses than the number of seats sold. This means that while both factors are important, strategies that focus on ticket pricing may have a larger impact on increasing yearly gross revenues of the Broadway than strategies focusing on increasing the number of seats sold.
+
+
+### 3. Beyond the Spotlight: Uncovering Broadway's Next Big Questions
+
+To really get a full picture of Broadway's financial dance, we should consider a few more angles in our next deep dives. Let's think about the big events or trends outside of Broadway that could be influencing ticket sales and prices. It'd also be fun to zoom in on specific shows – what made some soar while others stumbled? And lastly, let's not forget about us, the audience. What makes us tick, choose a show, or even splurge on a pricier seat? These are exciting avenues to explore in upcoming posts. Stay tuned!
+
+
+
+
+
+
+
+
+
+
