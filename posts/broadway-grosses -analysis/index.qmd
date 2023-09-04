@@ -67,11 +67,27 @@ summary_by_year<- grosses1 %>%
 summary_by_year$year <- as.numeric(summary_by_year$year)
 
 plot <- plot_ly(data = summary_by_year, x = ~year) %>%
-  add_trace(y = ~Average_Ticket_Price, name = 'Average Ticket Price ($)', mode = 'lines', 
-  line =      list(color = 'orange')) %>%
-  add_trace(y = ~Seats_Sold, name = 'Seats Sold (100K)', mode = 'lines', line = list(color = 'navy'))   %>%
-  add_trace(y = ~Yearly_Grosses, name = 'Yearly Grosses ($10M)', mode = 'lines', line = list(
-  color = 'red')) %>%
+  add_trace(y = ~Average_Ticket_Price, 
+            text = ~paste(round(Average_Ticket_Price, 2), " $"),
+            hoverinfo = "text+x",
+            name = 'Average Ticket Price ($)', 
+            mode = 'lines', 
+            line = list(color = 'orange')) %>%
+  
+  add_trace(y = ~Seats_Sold, 
+            text = ~paste(round(Seats_Sold, 2), " 100K"),
+            hoverinfo = "text+x",
+            name = 'Seats Sold (100K)', 
+            mode = 'lines', 
+            line = list(color = 'navy')) %>%
+
+  add_trace(y = ~Yearly_Grosses, 
+            text = ~paste(round(Yearly_Grosses, 2), " $10M"),
+            hoverinfo = "text+x",
+            name = 'Yearly Grosses ($10M)', 
+            mode = 'lines', 
+            line = list(color = 'red')) %>%
+  
   layout(title = "Analyzing Trends: Broadway's Revenues, Ticket Prices, and Seats Sold",
          xaxis = list(title = "Year", 
                       tickvals = seq(min(summary_by_year$year), 2019, by = 2),
@@ -80,6 +96,7 @@ plot <- plot_ly(data = summary_by_year, x = ~year) %>%
          yaxis = list(title = "Value"))
 
 plot
+
 
 ```
 
