@@ -5,14 +5,17 @@ body {
 
 h1 {
   font-size: 2.5em;
+  color: #f39c12;  /* Red color for h1 */
 }
 
 h2 {
   font-size: 2em;
+  color: #f39c12;  /* Green color for h2 */
 }
 
 h3 {
   font-size: 1.75em;
+  color: #3498db;  /* Orange color for h3 */
 }
 
 p {
@@ -20,9 +23,12 @@ p {
 }
 
 a {
-  color: #3498db; 
+  color: #7f8fa6; 
   font-size: 1em;
 }
+
+
+
 
 
 
